@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 小窗 PRD · 电脑版 HTML Demo (v0.1.1 · 真后端接入)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 50%, #ffb74d 100%);
+    color: #3e2723;
+    overflow: hidden;
+  }
+  .pc-shell {
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    gap: 32px; padding: 24px;
+  }
+  .pc-info {
+    width: 320px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    font-size: 14px; line-height: 1.7;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .pc-info h2 { color: #bf360c; margin-bottom: 12px; font-size: 18px; }
+  .pc-info h3 { color: #e65100; margin: 16px 0 6px; font-size: 15px; }
+  .pc-info .pill {
+    display: inline-block; padding: 2px 10px;
+    background: #fff3e0; color: #e65100;
+    border-radius: 12px; font-size: 12px; margin: 2px;
+  }
+  .pc-info .meta {
+    background: #fff3e0; padding: 8px 12px; border-radius: 8px;
+    margin: 8px 0; color: #6d4c41;
+  }
+  .pc-info ul { padding-left: 20px; }
+  .pc-info li { margin-bottom: 4px; }
+  .pc-info .status-ok { color: #2e7d32; font-weight: 500; }
+  .pc-info .status-bad { color: #c62828; font-weight: 500; }
+
+  .phone {
+    width: 380px; height: 90vh; max-height: 800px;
+    background: #fffaf0;
+    border-radius: 36px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25), 0 0 0 8px #2c2c2c, 0 0 0 12px #1a1a1a;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .topbar {
+    flex-shrink: 0;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #ffb74d 0%, #ff9800 100%);
+    color: white;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 15px; font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .topbar .icon-btn {
+    background: rgba(255,255,255,0.25);
+    border: none; color: white;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer; font-size: 14px;
+  }
+  .topbar .mode-badge {
+    background: rgba(255,255,255,0.25);
+    padding: 2px 10px; border-radius: 10px;
+    font-size: 11px;
+  }
+  .screen {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    background: #fffaf0;
+    scrollbar-width: thin;
+  }
+  .char-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 12px 0;
+  }
+  .char {
+    font-size: 80px; line-height: 1;
+    transition: transform 0.3s;
+    cursor: pointer; user-select: none;
+  }
+  .char:hover { transform: scale(1.1) rotate(-5deg); }
+  .char-label {
+    margin-top: 4px; font-size: 12px; color: #8d6e63;
+    background: #fff3e0; padding: 2px 10px; border-radius: 10px;
+  }
+  .bubble-row { display: flex; margin: 8px 0; }
+  .bubble-row.bot { justify-content: flex-start; }
+  .bubble-row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 14px; line-height: 1.5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    word-break: break-word;
+  }
+  .bubble.bot {
+    background: #fff3e0; color: #3e2723;
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.user {
+    background: #ffe0b2; color: #3e2723;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble.typing { color: #8d6e63; font-style: italic; }
+  .note-card {
+    background: white; border-radius: 14px;
+    padding: 14px; margin: 10px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    border-left: 4px solid #ff9800;
+  }
+  .note-card .topic {
+    font-size: 16px; font-weight: 600;
+    color: #bf360c; margin-bottom: 6px;
+  }
+  .note-card .time { font-size: 12px; color: #8d6e63; margin-bottom: 6px; }
+  .note-card .summary { font-size: 13px; color: #5d4037; line-height: 1.6; }
+  .parent-input {
+    width: 100%; padding: 10px; margin: 6px 0;
+    border: 1px solid #ffcc80; border-radius: 8px;
+    background: white; font-size: 14px;
+  }
+  .parent-btn {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white; border: none; padding: 12px;
+    border-radius: 10px; width: 100%;
+    font-size: 15px; cursor: pointer; margin: 8px 0;
+    font-weight: 500;
+  }
+  .parent-btn:hover { transform: translateY(-1px); }
+  .parent-btn.danger { background: linear-gradient(135deg, #e53935 0%, #c62828 100%); }
+  .stat-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #fff3e0;
+    font-size: 13px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .voice-btn {
+    background: #ff9800; color: white;
+    border: none; padding: 14px;
+    border-radius: 12px; width: 100%;
+    cursor: pointer; font-size: 14px; margin: 8px 0;
+  }
+  .voice-btn.recording { background: #e53935; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .input-bar {
+    flex-shrink: 0; padding: 12px 16px;
+    background: #fff3e0;
+    display: flex; gap: 8px; align-items: center;
+    border-top: 1px solid #ffe0b2;
+  }
+  .input-bar input {
+    flex: 1; padding: 10px 14px;
+    border: 1px solid #ffcc80; border-radius: 20px;
+    background: white; font-size: 14px;
+  }
+  .voice-circle {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white; border: none;
+    font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  .voice-circle.recording { background: #e53935; animation: pulse 1s infinite; }
+  .nav {
+    flex-shrink: 0;
+    background: white;
+    border-top: 1px solid #ffe0b2;
+    display: flex; justify-content: space-around;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .nav-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 4px;
+    cursor: pointer;
+    border: none; background: transparent;
+    color: #8d6e63; font-size: 11px;
+    transition: all 0.2s;
+  }
+  .nav-item .icon { font-size: 20px; }
+  .nav-item.active { color: #e65100; }
+  .nav-item.active .icon { transform: scale(1.15); }
+  .warn {
+    flex-shrink: 0;
+    background: #fff8e1; color: #e65100;
+    padding: 6px 12px;
+    text-align: center; font-size: 11px;
+    border-top: 1px solid #ffe0b2;
+  }
+  .screen.hidden { display: none; }
+
+  .quick-btn {
+    display: inline-block;
+    background: white;
+    border: 1px solid #ffcc80;
+    color: #e65100;
+    padding: 8px 14px;
+    border-radius: 16px;
+    margin: 4px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .quick-btn:hover { background: #fff3e0; }
+</style>
+</head>
+<body>
+
+<div class="pc-shell">
+  <aside class="pc-info">
+    <h2>🌿 小窗 PRD v0.1.1</h2>
+    <div class="meta">
+      <strong>真后端接入版</strong><br>
+      <span id="backend-status">⏳ 正在连接后端...</span>
+    </div>
+
+    <h3>5 屏导航</h3>
+    <ul>
+      <li>🏠 <strong>首屏</strong> — 形象介绍 + 快捷提问</li>
+      <li>💬 <strong>主对话</strong> — 反问引导</li>
+      <li>💛 <strong>情感陪伴</strong> — 倾听</li>
+      <li>📖 <strong>小本本</strong> — 长期记忆</li>
+      <li>👨‍👩‍👧 <strong>家长通道</strong> — 远程了解</li>
+    </ul>
+
+    <h3>启动后端</h3>
+    <div class="meta" style="font-family:monospace; font-size:12px;">
+      cd backend<br>
+      pip install -r requirements.txt<br>
+      python app.py
+    </div>
+
+    <h3>互动说明</h3>
+    <ul>
+      <li>底部导航切换 5 屏</li>
+      <li>点击 🦊 形象切换 7 种表情</li>
+      <li>主对话屏/首屏输入文字 → 调真后端</li>
+      <li>家长屏查真实话题统计</li>
+      <li>30 秒无操作故事兜底(后端实现)</li>
+    </ul>
+
+    <h3>关键合规</h3>
+    <div class="meta" style="font-size:12px;">
+      ⚠️ AI 回复自带"讲的可能不全对"水印<br>
+      🔒 家长看不到对话原文<br>
+      🗑️ 30 天滚动删除<br>
+      🛡️ R05 拒绝清单生效
+    </div>
+
+    <h3>技术栈</h3>
+    <div>
+      <span class="pill">Flask 后端</span>
+      <span class="pill">SQLite</span>
+      <span class="pill">MiniMax M3</span>
+      <span class="pill">双模式</span>
+      <span class="pill">mock/real 切换</span>
+    </div>
+  </aside>
+
+  <main class="phone">
+    <header class="topbar">
+      <span id="topbar-title">🌿 小窗 · 今天想学什么?</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="mode-badge" id="mode-badge">mock</span>
+        <button class="icon-btn" onclick="go('home')">⚙️</button>
+      </div>
+    </header>
+
+    <!-- 屏 1：首屏入口 -->
+    <div id="screen-home" class="screen">
+      <div class="char-wrap">
+        <div class="char" onclick="cycleExpr(this)">🦊</div>
+        <div class="char-label" id="expr-label">😊 默认</div>
+      </div>
+      <div class="bubble-row bot">
+        <div class="bubble bot">嗨!我是小窗,你的学习小搭档~<br>跟我说什么都行,你试试这些:</div>
+      </div>
+      <div style="text-align:center; margin:8px 0 16px;">
+        <span class="quick-btn" onclick="quickAsk('为什么树叶会变色?')">🍃 树叶为什么变色?</span>
+        <span class="quick-btn" onclick="quickAsk('鱼在水里怎么呼吸?')">🐠 鱼怎么呼吸?</span>
+        <span class="quick-btn" onclick="quickAsk('天为什么是蓝的?')">☁️ 天为什么是蓝的?</span>
+        <span class="quick-btn" onclick="quickAsk('今天不开心')">💛 今天不开心</span>
+      </div>
+    </div>
+
+    <!-- 屏 2：主对话屏 -->
+    <div id="screen-chat" class="screen hidden">
+      <div id="chat-history">
+        <div class="bubble-row bot">
+          <div class="bubble bot">🦊 你好呀!想聊什么?跟我说什么都行~</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 屏 3：情感陪伴屏 -->
+    <div id="screen-emotion" class="screen hidden">
+      <div class="char-wrap">
+        <div class="char" onclick="cycleExpr(this)">🐻</div>
+        <div class="char-label">🤗 温柔倾听</div>
+      </div>
+      <div class="bubble-row bot">
+        <div class="bubble bot">🦊 今天怎么了?想说就说,我听着呢,不会告诉别人。</div>
+      </div>
+      <div style="text-align:center; margin: 16px 0;">
+        <span class="quick-btn" onclick="quickAsk('今天被同学笑了一下')">今天被同学笑</span>
+        <span class="quick-btn" onclick="quickAsk('想妈妈了')">想妈妈了</span>
+        <span class="quick-btn" onclick="quickAsk('考试没考好')">考试没考好</span>
+      </div>
+      <div style="margin-top:16px; padding:12px; background:#e8f5e9; border-radius:12px; font-size:13px; color:#2e7d32;">
+        🤝 心里话我不记在小本本上,这是你的秘密
+      </div>
+    </div>
+
+    <!-- 屏 4：小本本屏 -->
+    <div id="screen-notebook" class="screen hidden">
+      <div style="text-align:center; color:#8d6e63; font-size:13px; margin-bottom:8px;">
+        (孩子问过的话题,帮孩子记得他学过的东西)
+      </div>
+      <div id="notebook-list">
+        <div style="text-align:center; color:#8d6e63; padding:20px;">⏳ 加载中...</div>
+      </div>
+    </div>
+
+    <!-- 屏 5：家长通道 -->
+    <div id="screen-parent" class="screen hidden">
+      <h3 style="color:#bf360c; margin-bottom:12px;">👨‍👩‍👧 家长通道</h3>
+
+      <input class="parent-input" type="text" placeholder="📱 手机号" id="parent-phone">
+      <input class="parent-input" type="text" placeholder="🔐 短信验证码 (123456)" id="parent-code">
+      <button class="parent-btn" onclick="parentLogin()">登入看看孩子 →</button>
+
+      <div id="parent-data" style="display:none;">
+        <div style="margin: 16px 0; padding: 12px; background:#fff3e0; border-radius:10px;">
+          <div style="font-size:14px; font-weight:500; color:#bf360c;" id="parent-greeting">你好,家长</div>
+          <div style="font-size:12px; color:#8d6e63; margin-top:4px;" id="parent-summary">--</div>
+        </div>
+
+        <h4 style="color:#e65100; font-size:14px; margin: 12px 0 6px;">── 今天他问了什么 ──</h4>
+        <div id="parent-topics"><div style="text-align:center;color:#8d6e63;">暂无话题</div></div>
+
+        <h4 style="color:#e65100; font-size:14px; margin: 12px 0 6px;">── 给小明发条语音留言 ──</h4>
+        <button class="voice-btn" id="parent-voice"
+                onmousedown="recordStart(this)" onmouseup="recordEnd(this)"
+                ontouchstart="recordStart(this)" ontouchend="recordEnd(this)">🎤 按住说话...</button>
+
+        <button class="parent-btn danger" onclick="parentClear()">⚠️ 一键清空孩子所有数据</button>
+      </div>
+
+      <div style="margin-top:16px; padding:10px; background:#e3f2fd; border-radius:8px; font-size:12px; color:#1565c0;">
+        ℹ️ 你看不到孩子和小窗聊了什么原文<br>
+        &nbsp;&nbsp;&nbsp;这保护孩子敢说心里话
+      </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="input-bar" id="input-bar">
+      <input type="text" id="chat-input" placeholder="跟小窗说点什么..." onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="voice-circle" onclick="sendChat()">🎤</button>
+    </div>
+
+    <div class="warn">⚠️ 小窗是 AI 学习搭子 · ℹ️ 讲的可能不全对</div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-screen="home" onclick="go('home')">
+        <div class="icon">🏠</div><div>主页</div>
+      </button>
+      <button class="nav-item" data-screen="chat" onclick="go('chat')">
+        <div class="icon">💬</div><div>对话</div>
+      </button>
+      <button class="nav-item" data-screen="emotion" onclick="go('emotion')">
+        <div class="icon">💛</div><div>情感</div>
+      </button>
+      <button class="nav-item" data-screen="notebook" onclick="go('notebook')">
+        <div class="icon">📖</div><div>小本本</div>
+      </button>
+      <button class="nav-item" data-screen="parent" onclick="go('parent')">
+        <div class="icon">👨‍👩‍👧</div><div>家长</div>
+      </button>
+    </nav>
+  </main>
+</div>
+
+<script>
+// ===== 全局状态 =====
+const API_BASE = "http://localhost:8000";
+const SESSION_ID = "demo-session-" + Math.random().toString(36).slice(2, 10);
+let backendMode = "unknown";
+
+// ===== 后端健康检查 =====
+async function checkBackend() {
+  const el = document.getElementById("backend-status");
+  try {
+    const r = await fetch(API_BASE + "/api/health");
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    backendMode = data.mode;
+    el.innerHTML = '<span class="status-ok">✅ 后端连接成功</span><br>模式: ' + data.mode + ' · 模型: ' + data.model;
+    document.getElementById("mode-badge").textContent = data.mode;
+  } catch (e) {
+    el.innerHTML = '<span class="status-bad">❌ 后端未启动</span><br>请先运行 backend/app.py';
+  }
+}
+checkBackend();
+
+// ===== 切屏 =====
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const target = document.getElementById('screen-' + name);
+  if (target) target.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.querySelector(`.nav-item[data-screen="${name}"]`);
+  if (nav) nav.classList.add('active');
+  const titles = {
+    home: '🌿 小窗 · 今天想学什么?',
+    chat: '🌿 小窗 · 今天想学什么?',
+    emotion: '🌿 小窗 · 我在这儿呢',
+    notebook: '🌿 我的小本本',
+    parent: '👨‍👩‍👧 家长通道'
+  };
+  document.getElementById('topbar-title').textContent = titles[name] || '🌿 小窗';
+  document.getElementById('input-bar').style.display = (name === 'chat' || name === 'home') ? 'flex' : 'none';
+
+  if (name === 'notebook') loadNotebook();
+}
+
+// ===== 表情循环 =====
+const EXPRS = [
+  { emoji: '🦊', label: '😊 默认' },
+  { emoji: '😺', label: '😸 开心' },
+  { emoji: '🤔', label: '🤔 思考' },
+  { emoji: '😮', label: '😲 惊讶' },
+  { emoji: '😳', label: '😳 害羞' },
+  { emoji: '🤗', label: '🤗 鼓励' },
+  { emoji: '😵', label: '😵 困惑' },
+];
+let exprIdx = 0;
+function cycleExpr(el) {
+  exprIdx = (exprIdx + 1) % EXPRS.length;
+  const cur = EXPRS[exprIdx];
+  el.textContent = cur.emoji;
+  const label = document.getElementById('expr-label');
+  if (label) label.textContent = cur.label;
+}
+
+// ===== 发送对话 =====
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await askBackend(text, 'chat');
+}
+
+async function quickAsk(text) {
+  // 切到对话屏再问
+  go('chat');
+  document.getElementById('chat-input').value = text;
+  await sendChat();
+}
+
+async function askBackend(text, targetScreen) {
+  const screenId = targetScreen === 'chat' ? 'chat-history' : 'chat-history';
+  const screen = document.getElementById(screenId);
+
+  // 用户气泡
+  const userRow = document.createElement('div');
+  userRow.className = 'bubble-row user';
+  userRow.innerHTML = '<div class="bubble user">' + escapeHtml(text) + '</div>';
+  screen.appendChild(userRow);
+  screen.scrollTop = screen.scrollHeight;
+
+  // loading
+  const loadingRow = document.createElement('div');
+  loadingRow.className = 'bubble-row bot';
+  loadingRow.innerHTML = '<div class="bubble bot typing">🦊 小窗在想...</div>';
+  screen.appendChild(loadingRow);
+  screen.scrollTop = screen.scrollHeight;
+
+  try {
+    const r = await fetch(API_BASE + "/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text, session_id: SESSION_ID})
+    });
+    const data = await r.json();
+    loadingRow.remove();
+
+    const botRow = document.createElement('div');
+    botRow.className = 'bubble-row bot';
+    botRow.innerHTML = '<div class="bubble bot">' + escapeHtml(data.text).replace(/\n/g, '<br>') + '</div>';
+    screen.appendChild(botRow);
+    screen.scrollTop = screen.scrollHeight;
+
+    // 切换表情
+    const charEl = document.querySelector('.char');
+    const exprMap = {smile:'😺', thinking:'🤔', surprised:'😮', shy:'😳', encourage:'🤗', confused:'😵'};
+    if (charEl && exprMap[data.expression]) {
+      charEl.textContent = exprMap[data.expression];
+      const label = document.getElementById('expr-label');
+      if (label) label.textContent = data.expression;
+    }
+  } catch (e) {
+    loadingRow.remove();
+    const errRow = document.createElement('div');
+    errRow.className = 'bubble-row bot';
+    errRow.innerHTML = '<div class="bubble bot" style="color:#c62828;">❌ 后端连不上。请确认 backend/app.py 已启动。</div>';
+    screen.appendChild(errRow);
+    screen.scrollTop = screen.scrollHeight;
+  }
+}
+
+// ===== 加载小本本 =====
+async function loadNotebook() {
+  const list = document.getElementById('notebook-list');
+  list.innerHTML = '<div style="text-align:center;color:#8d6e63;padding:20px;">⏳ 加载中...</div>';
+  try {
+    const r = await fetch(API_BASE + "/api/topics?session_id=" + SESSION_ID);
+    const data = await r.json();
+    if (!data.topics || data.topics.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#8d6e63;padding:20px;">还没有话题,先去和 🦊 小窗聊聊吧!</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.topics.forEach(t => {
+      list.innerHTML += `
+        <div class="note-card">
+          <div class="topic">${escapeHtml(t.topic)}</div>
+          <div class="time">🦊 ${escapeHtml(t.created_at || '')}</div>
+          <div class="summary">${escapeHtml(t.reply_summary || '')}</div>
+        </div>`;
+    });
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center;color:#c62828;padding:20px;">❌ 后端未连接</div>';
+  }
+}
+
+// ===== 家长通道 =====
+let parentLoggedIn = false;
+async function parentLogin() {
+  const phone = document.getElementById('parent-phone').value;
+  const code = document.getElementById('parent-code').value;
+  if (!phone) return alert('请输入手机号');
+  // R11 简化版：只要手机号非空就放行 (真实场景需短信验证)
+  parentLoggedIn = true;
+  document.getElementById('parent-data').style.display = 'block';
+  document.getElementById('parent-greeting').textContent = '你好,' + phone.slice(-4) + ' 家长';
+  await loadParentStats();
+}
+
+async function loadParentStats() {
+  try {
+    const r = await fetch(API_BASE + "/api/parent/stats?child_session=" + SESSION_ID);
+    const data = await r.json();
+    document.getElementById('parent-summary').textContent =
+      `小窗陪了 ${data.total_topics} 个话题 · 分类: 教育 ${data.by_category.education || 0} · 闲聊 ${data.by_category.chat || 0}`;
+    const topicsEl = document.getElementById('parent-topics');
+    if (data.recent_topics.length === 0) {
+      topicsEl.innerHTML = '<div style="text-align:center;color:#8d6e63;">暂无话题</div>';
+    } else {
+      topicsEl.innerHTML = data.recent_topics.map(t =>
+        `<div class="stat-row"><span>${escapeHtml(t.topic)}</span><span style="color:#8d6e63;">${escapeHtml((t.time || '').slice(0,16))}</span></div>`
+      ).join('');
+    }
+  } catch (e) {
+    document.getElementById('parent-summary').textContent = '❌ 后端未连接';
+  }
+}
+
+async function parentClear() {
+  if (!confirm('确认清空孩子所有数据?此操作不可逆')) return;
+  try {
+    await fetch(API_BASE + "/api/parent/clear", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({child_session: SESSION_ID})
+    });
+    alert('已清空');
+    loadParentStats();
+  } catch (e) {
+    alert('清空失败:' + e);
+  }
+}
+
+function recordStart(btn) {
+  btn.classList.add('recording');
+  btn.textContent = '🔴 正在录音...';
+}
+async function recordEnd(btn) {
+  btn.classList.remove('recording');
+  btn.textContent = '⏳ 发送中...';
+  try {
+    await fetch(API_BASE + "/api/parent/voice", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        child_session: SESSION_ID,
+        text: "(家长语音留言 · " + new Date().toLocaleTimeString() + ")"
+      })
+    });
+    btn.textContent = '✅ 留言已发,孩子下次打开能听到';
+  } catch (e) {
+    btn.textContent = '❌ 发送失败';
+  }
+  setTimeout(() => btn.textContent = '🎤 按住说话...', 2000);
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 小窗 · 教育版（002+001 融合风）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: linear-gradient(160deg, #fff8e1 0%, #ffe0b2 100%);
+    color: #3e2723;
+    display: flex; flex-direction: column;
+  }
+  .topbar {
+    background: linear-gradient(90deg, #fb923c 0%, #f97316 100%);
+    color: white; padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 12px rgba(249, 115, 22, 0.15);
+    flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .streak-badge {
+    background: rgba(255,255,255,0.25); padding: 6px 14px;
+    border-radius: 16px; font-size: 13px;
+  }
+
+  /* 主布局：占满剩余视口高度，3 列同高 */
+  .layout {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 220px 1fr 320px;
+    gap: 14px; padding: 14px;
+    /* 取消 max-width 居中，让它填满 */
+    width: 100%;
+  }
+
+  /* 三列：flex 列布局，让内部子项垂直分配高度 */
+  .sidebar, .main-content, .rightbar {
+    display: flex; flex-direction: column;
+    min-height: 0; /* 关键：允许 flex 子项收缩 */
+  }
+
+  /* ========== 左栏：导航 + 🦊 形象 + 心情 ========== */
+  .sidebar {
+    background: white; border-radius: 16px; padding: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .nav h3 {
+    color: #ea580c; font-size: 12px; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px; cursor: pointer;
+    color: #525252; font-size: 13px; margin-bottom: 4px;
+    transition: all 0.2s;
+  }
+  .nav-item:hover { background: #fff7ed; }
+  .nav-item.active { background: #ffedd5; color: #ea580c; font-weight: 600; }
+  .nav-item .icon { font-size: 16px; }
+
+  .char-card {
+    margin-top: 14px; padding: 16px;
+    background: linear-gradient(135deg, #fff 0%, #fff8e1 100%);
+    border-radius: 14px; text-align: center;
+  }
+  .char { font-size: 60px; cursor: pointer; transition: transform 0.3s; }
+  .char:hover { transform: scale(1.15) rotate(-8deg); }
+  .char-label {
+    background: #fff3e0; padding: 3px 10px;
+    border-radius: 10px; display: inline-block;
+    color: #e65100; font-size: 11px; margin-top: 6px;
+  }
+  .mood-tracker { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #ffe0b2; }
+  .mood-tracker h4 { color: #bf360c; font-size: 12px; margin-bottom: 6px; }
+  .mood-row { display: flex; gap: 4px; }
+  .mood-btn {
+    flex: 1; padding: 4px 2px;
+    background: white; border: 1px solid #ffe0b2;
+    border-radius: 6px; cursor: pointer;
+    font-size: 16px; transition: all 0.2s;
+  }
+  .mood-btn.active { background: #ffe0b2; border-color: #ff9800; }
+
+  /* ========== 中栏：主内容 ========== */
+  .main-content {
+    display: flex; flex-direction: column; gap: 14px;
+    min-height: 0;
+  }
+  .panel {
+    background: white; border-radius: 16px; padding: 18px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    flex-shrink: 0;
+  }
+  .task-card {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+  }
+  .task-title { font-size: 17px; color: #9a3412; font-weight: 700; margin-bottom: 6px; }
+  .task-meta { color: #c2410c; font-size: 12px; margin-bottom: 12px; }
+  .task-progress {
+    background: rgba(255,255,255,0.6); border-radius: 6px;
+    height: 8px; overflow: hidden; margin-bottom: 12px;
+  }
+  .task-progress-bar {
+    height: 100%; background: linear-gradient(90deg, #fb923c, #ea580c);
+    width: 0%; transition: width 0.5s;
+  }
+  .task-actions { display: flex; gap: 8px; }
+  .task-actions button {
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    border: 2px solid #ea580c; background: white;
+    color: #ea580c; font-weight: 500; font-size: 13px;
+  }
+  .task-actions button.primary {
+    background: linear-gradient(90deg, #fb923c, #ea580c);
+    color: white; border: none;
+  }
+
+  /* 对话面板：吸收剩余高度，不再写死 max-height */
+  .chat-panel {
+    flex: 1; display: flex; flex-direction: column;
+    min-height: 0; overflow: hidden;
+  }
+  .chat-history {
+    flex: 1; overflow-y: auto; padding: 12px;
+    background: rgba(255,255,255,0.5); border-radius: 12px;
+    margin-bottom: 10px;
+    /* 删掉了 max-height: 380px */
+  }
+  .bubble {
+    padding: 9px 13px; border-radius: 14px;
+    margin: 6px 0; max-width: 78%; font-size: 14px;
+    line-height: 1.5;
+  }
+  .bubble.bot { background: #fff3e0; }
+  .bubble.user { background: #ffe0b2; margin-left: auto; }
+  .bubble.typing { color: #8d6e63; font-style: italic; }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1; padding: 9px 14px; border: 2px solid #ffe0b2;
+    border-radius: 20px; background: white; font-size: 14px;
+    outline: none;
+  }
+  .input-row input:focus { border-color: #ff9800; }
+  .input-row button {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white; border: none; padding: 0 16px;
+    border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 13px;
+  }
+  .quick-row { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .quick-btn {
+    padding: 5px 11px; background: white;
+    border: 1px solid #ffcc80; border-radius: 12px;
+    font-size: 11px; color: #e65100; cursor: pointer;
+  }
+  .quick-btn:hover { background: #fff3e0; }
+
+  /* ========== 右栏：番茄钟 + 成就 + 拍照 ========== */
+  .rightbar {
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .rightbar .panel { flex-shrink: 0; padding: 14px; }
+  .timer-card {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    text-align: center;
+  }
+  .timer-display {
+    font-size: 40px; font-weight: 800;
+    color: #bf360c; font-variant-numeric: tabular-nums;
+    margin: 8px 0 4px;
+  }
+  .timer-label { color: #78716c; font-size: 12px; margin-bottom: 14px; }
+  .timer-btns { display: flex; gap: 6px; }
+  .timer-btns button {
+    flex: 1; padding: 8px;
+    background: white; border: 2px solid #ff9800;
+    color: #bf360c; border-radius: 8px;
+    cursor: pointer; font-size: 12px; font-weight: 500;
+  }
+  .timer-btns button.primary {
+    background: linear-gradient(90deg, #fb923c, #ea580c);
+    color: white; border: none;
+  }
+
+  .photo-card {
+    background: white; text-align: center;
+    padding: 16px;
+  }
+  .photo-card .icon { font-size: 40px; margin-bottom: 6px; }
+  .photo-card h4 { color: #bf360c; font-size: 14px; margin-bottom: 4px; }
+  .photo-card p { color: #6d4c41; font-size: 11px; margin-bottom: 10px; }
+  .photo-card button {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white; border: none; padding: 10px 18px;
+    border-radius: 18px; cursor: pointer; font-weight: 500; font-size: 13px;
+    width: 100%;
+  }
+
+  .achievement {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: #fef3c7;
+    border-radius: 8px; margin-bottom: 4px;
+  }
+  .achievement .badge {
+    background: #f59e0b; color: white;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .achievement .text { font-size: 11px; color: #78350f; line-height: 1.4; }
+  .achievement .text b { display: block; font-size: 12px; color: #451a03; }
+
+  .warn-bar {
+    flex-shrink: 0;
+    background: rgba(255, 248, 225, 0.98);
+    backdrop-filter: blur(8px);
+    padding: 8px 16px; text-align: center;
+    font-size: 11px; color: #e65100;
+    border-top: 1px solid #ffe0b2;
+    z-index: 10;
+  }
+
+  .status-dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: #10b981;
+    margin-right: 4px;
+  }
+  .status-dot.offline { background: #ef4444; }
+
+  /* ========== 多页面切换 ========== */
+  .page {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .page.hidden { display: none; }
+  .page-header {
+    font-size: 17px; font-weight: 600; color: #9a3412;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 2px solid #ffe0b2;
+  }
+
+  /* 计划清单项 */
+  .plan-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: #fff8e1;
+    border-radius: 10px; margin-bottom: 6px;
+    border-left: 4px solid #ff9800;
+  }
+  .plan-item .time {
+    background: #ea580c; color: white;
+    padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .plan-item .text {
+    flex: 1; font-size: 13px; color: #3e2723;
+  }
+  .plan-item.done {
+    opacity: 0.6; border-left-color: #10b981;
+  }
+  .plan-item.done .text { text-decoration: line-through; }
+  .plan-item .del {
+    background: transparent; border: none;
+    color: #c62828; cursor: pointer; font-size: 14px;
+  }
+
+  /* 小本本项 */
+  .note-card {
+    background: white; border-radius: 12px;
+    padding: 12px; margin-bottom: 8px;
+    border-left: 4px solid #ff9800;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .note-card .topic {
+    font-size: 14px; font-weight: 600;
+    color: #bf360c; margin-bottom: 4px;
+  }
+  .note-card .time {
+    font-size: 11px; color: #8d6e63; margin-bottom: 6px;
+  }
+  .note-card .summary {
+    font-size: 12px; color: #5d4037; line-height: 1.5;
+  }
+
+  /* 拍题结果 */
+  .photo-result {
+    background: #fff8e1; padding: 14px;
+    border-radius: 12px; border-left: 4px solid #ea580c;
+  }
+  .photo-result h4 {
+    color: #bf360c; font-size: 14px; margin-bottom: 8px;
+  }
+  .photo-result .step {
+    background: white; padding: 10px; border-radius: 8px;
+    margin-bottom: 6px; font-size: 13px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🌿 小窗学习</h1>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span id="conn-status"><span class="status-dot"></span>已连接</span>
+    <div class="streak-badge">🔥 <span id="streak">0</span> 天</div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- 左：导航 + 形象 + 心情 -->
+  <aside class="sidebar">
+    <div class="nav">
+      <h3>导航</h3>
+      <div class="nav-item active" data-page="home"><span class="icon">🏠</span>首页</div>
+      <div class="nav-item" data-page="chat"><span class="icon">💬</span>对话小窗</div>
+      <div class="nav-item" data-page="photo"><span class="icon">📷</span>拍题详解</div>
+      <div class="nav-item" data-page="notebook"><span class="icon">📖</span>小本本</div>
+      <div class="nav-item" data-page="plan"><span class="icon">⏰</span>学习计划</div>
+      <div class="nav-item" data-page="parent"><span class="icon">👨‍👩‍👧</span>家长</div>
+    </div>
+
+    <div class="char-card">
+      <div class="char" id="char" onclick="cycleExpr()">🦊</div>
+      <div class="char-label" id="expr-label">😊 嗨,我是小窗</div>
+      <div class="mood-tracker">
+        <h4>今天心情怎么样？</h4>
+        <div class="mood-row">
+          <button class="mood-btn active" data-mood="happy">😊</button>
+          <button class="mood-btn" data-mood="calm">😐</button>
+          <button class="mood-btn" data-mood="sad">😔</button>
+          <button class="mood-btn" data-mood="angry">😤</button>
+          <button class="mood-btn" data-mood="sleepy">😴</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 中：多页面容器 -->
+  <main class="main-content">
+    <!-- =================== 首页 =================== -->
+    <div class="page" data-page="home">
+      <div class="panel task-card">
+        <div class="task-title" id="today-task">📚 今天还没设定任务</div>
+        <div class="task-meta" id="task-meta">点击下方"添加今日任务"开始</div>
+        <div class="task-progress"><div class="task-progress-bar" id="task-bar"></div></div>
+        <div class="task-actions">
+          <button class="primary" onclick="setTask()">添加今日任务</button>
+          <button onclick="finishTask()">完成任务</button>
+        </div>
+      </div>
+
+      <div class="panel chat-panel">
+        <div class="chat-history" id="chat-history">
+          <div class="bubble bot">🦊 嗨！今天想问什么？我陪你~</div>
+        </div>
+        <div class="input-row">
+          <input id="chat-input" placeholder="跟小窗说点什么..." onkeydown="if(event.key==='Enter') sendChat()">
+          <button onclick="sendChat()">发送</button>
+        </div>
+        <div class="quick-row">
+          <span class="quick-btn" onclick="quickAsk('树叶为什么会变色?')">🍃 树叶变色</span>
+          <span class="quick-btn" onclick="quickAsk('鱼在水里怎么呼吸?')">🐠 鱼的呼吸</span>
+          <span class="quick-btn" onclick="quickAsk('分数怎么理解?')">📐 分数</span>
+          <span class="quick-btn" onclick="quickAsk('今天不开心')">💛 心情</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== 对话小窗 =================== -->
+    <div class="page hidden" data-page="chat">
+      <div class="panel chat-panel" style="flex:1;">
+        <div class="page-header">💬 跟小窗聊聊</div>
+        <div class="chat-history" id="chat-history-2">
+          <div class="bubble bot">🦊 这是独立对话区,专心聊你想问的吧~</div>
+        </div>
+        <div class="input-row">
+          <input id="chat-input-2" placeholder="跟小窗说点什么..." onkeydown="if(event.key==='Enter'){document.getElementById('chat-input-2').value && sendChatTo('chat-input-2','chat-history-2')}">
+          <button onclick="sendChatTo('chat-input-2','chat-history-2')">发送</button>
+        </div>
+        <div class="quick-row">
+          <span class="quick-btn" onclick="quickAskTo('分数怎么理解?','chat-input-2','chat-history-2')">📐 分数</span>
+          <span class="quick-btn" onclick="quickAskTo('三角形面积怎么算?','chat-input-2','chat-history-2')">📐 三角形</span>
+          <span class="quick-btn" onclick="quickAskTo('英语怎么学?','chat-input-2','chat-history-2')">🔤 英语</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== 拍题详解 =================== -->
+    <div class="page hidden" data-page="photo">
+      <div class="panel" style="flex:1;overflow-y:auto;min-height:0;">
+        <div class="page-header">📷 拍题详解</div>
+        <p style="color:#6d4c41;font-size:13px;margin-bottom:14px;">
+          把不会的题目拍下来,小窗给你:
+          <br>① 思路拆解 (step by step)
+          <br>② 举一反三 3 道相似题
+          <br>③ 错因归因 (为什么错)
+        </p>
+        <div style="text-align:center;padding:40px 0;background:#fff8e1;border-radius:12px;">
+          <div style="font-size:60px;margin-bottom:10px;">📸</div>
+          <div style="color:#bf360c;font-weight:500;margin-bottom:14px;">拍照上传,小窗来解题</div>
+          <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+          <button onclick="document.getElementById('photo-input').click()" style="background:linear-gradient(135deg,#ff9800,#f57c00);color:white;border:none;padding:12px 28px;border-radius:20px;cursor:pointer;font-weight:500;">
+            📷 拍照 / 上传图片
+          </button>
+        </div>
+        <div id="photo-result" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- =================== 小本本 =================== -->
+    <div class="page hidden" data-page="notebook">
+      <div class="panel" style="flex:1;overflow-y:auto;">
+        <div class="page-header">📖 我的小本本</div>
+        <p style="color:#8d6e63;font-size:12px;margin-bottom:14px;">
+          记录你问过的所有问题 + 小窗的解答摘要
+        </p>
+        <div id="notebook-list">
+          <div style="text-align:center;color:#8d6e63;padding:20px;">⏳ 加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== 学习计划 =================== -->
+    <div class="page hidden" data-page="plan">
+      <div class="panel" style="flex:1;overflow-y:auto;">
+        <div class="page-header">⏰ 学习计划</div>
+        <p style="color:#8d6e63;font-size:12px;margin-bottom:14px;">
+          设定今天要学的内容,小窗会定时提醒你~
+        </p>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:12px 0 8px;">📝 添加任务</h4>
+        <div style="display:flex;gap:6px;margin-bottom:16px;">
+          <input id="plan-task-input" placeholder="比如:做 5 道分数题" style="flex:1;padding:9px 14px;border:2px solid #ffe0b2;border-radius:20px;font-size:13px;background:white;">
+          <input id="plan-time-input" type="time" style="padding:9px;border:2px solid #ffe0b2;border-radius:10px;font-size:13px;background:white;">
+          <button onclick="addPlan()" style="background:linear-gradient(135deg,#ff9800,#f57c00);color:white;border:none;padding:0 16px;border-radius:20px;cursor:pointer;">添加</button>
+        </div>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:12px 0 8px;">📋 今日任务清单</h4>
+        <div id="plan-list">
+          <div style="text-align:center;color:#8d6e63;padding:20px;">还没有任务,添加一个吧~</div>
+        </div>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:16px 0 8px;">⏱️ 专注统计</h4>
+        <div style="background:#fff8e1;padding:14px;border-radius:12px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="color:#6d4c41;font-size:13px;">今日专注</span>
+            <span style="color:#bf360c;font-weight:600;"><span id="focus-mins-2">0</span> 分钟</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#6d4c41;font-size:13px;">完成任务</span>
+            <span style="color:#bf360c;font-weight:600;"><span id="done-count">0</span> 个</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== 家长 =================== -->
+    <div class="page hidden" data-page="parent">
+      <div class="panel" style="flex:1;overflow-y:auto;">
+        <div class="page-header">👨‍👩‍👧 家长通道</div>
+        <p style="color:#8d6e63;font-size:12px;margin-bottom:14px;">
+          了解孩子今天问什么,发语音留言鼓励他/她
+        </p>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:12px 0 8px;">📊 孩子今天问了什么</h4>
+        <div id="parent-topics" style="background:#fff8e1;padding:12px;border-radius:10px;margin-bottom:14px;">
+          <div style="text-align:center;color:#8d6e63;">⏳ 加载中...</div>
+        </div>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:12px 0 8px;">🎤 发条语音留言</h4>
+        <div style="background:#fff8e1;padding:14px;border-radius:10px;">
+          <input id="parent-msg-input" type="text" placeholder="想说点什么..." style="width:100%;padding:9px 12px;border:1px solid #ffcc80;border-radius:8px;font-size:13px;margin-bottom:8px;">
+          <button onclick="sendParentVoice()" style="background:linear-gradient(135deg,#ff9800,#f57c00);color:white;border:none;padding:10px 20px;border-radius:18px;cursor:pointer;width:100%;font-weight:500;">
+            🎤 发送语音留言
+          </button>
+        </div>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:16px 0 8px;">📚 孩子的情绪</h4>
+        <div id="parent-mood" style="background:#fff8e1;padding:12px;border-radius:10px;font-size:13px;color:#6d4c41;">
+          ☀️ 今天整体开心
+        </div>
+
+        <h4 style="color:#bf360c;font-size:14px;margin:16px 0 8px;">⚠️ 数据管理</h4>
+        <button onclick="clearAllData()" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;padding:10px 20px;border-radius:18px;cursor:pointer;width:100%;font-weight:500;">
+          🗑️ 一键清空孩子所有数据
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 右：番茄钟 + 拍照 + 成就 -->
+  <aside class="rightbar">
+    <div class="panel timer-card">
+      <div style="font-size:13px;color:#bf360c;font-weight:500;">⏰ 番茄钟</div>
+      <div class="timer-display" id="timer-display">25:00</div>
+      <div class="timer-label" id="timer-label">准备开始</div>
+      <div class="timer-btns">
+        <button onclick="setTimer(15)">15 分</button>
+        <button class="primary" onclick="toggleTimer()" id="timer-btn">开始</button>
+        <button onclick="setTimer(30)">30 分</button>
+      </div>
+    </div>
+
+    <div class="panel photo-card">
+      <div class="icon">📷</div>
+      <h4>拍题详解</h4>
+      <p>拍照上传,小窗思路拆解 + 举一反三 3 道相似题</p>
+      <button onclick="alert('拍照功能需调用摄像头,生产环境启用')">📸 拍照上传</button>
+    </div>
+
+    <div class="panel">
+      <h4 style="color:#bf360c;font-size:13px;margin-bottom:8px;">🏆 今日成就</h4>
+      <div class="achievement">
+        <div class="badge">📚</div>
+        <div class="text"><b>问题小能手</b>今天问了 <span id="ask-count">0</span> 个问题</div>
+      </div>
+      <div class="achievement">
+        <div class="badge">⏰</div>
+        <div class="text"><b>专注小达人</b>今天专注 <span id="focus-mins">0</span> 分钟</div>
+      </div>
+      <div class="achievement">
+        <div class="badge">🌟</div>
+        <div class="text"><b>连击挑战</b>已坚持 <span id="streak2">0</span> 天</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="warn-bar">
+  ⚠️ 小窗是 AI 学习搭子,不替代老师/家长 · ℹ️ 讲的可能不全对
+</div>
+
+<script>
+// ========== 配置 ==========
+const API_BASE = "http://localhost:8000";
+const SESSION_ID = "edu-" + Math.random().toString(36).slice(2, 10);
+let askCount = 0;
+let focusMins = 0;
+
+// ========== 后端健康检查 ==========
+async function checkBackend() {
+  try {
+    const r = await fetch(API_BASE + "/api/health");
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    document.getElementById("conn-status").innerHTML =
+      `<span class="status-dot"></span>${d.mode === "real" ? "真实模式" : "Mock"}`;
+  } catch {
+    document.getElementById("conn-status").innerHTML =
+      '<span class="status-dot offline"></span>未连接';
+  }
+}
+checkBackend();
+setInterval(checkBackend, 15000);
+
+// ========== 页面切换 ==========
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const page = item.dataset.page;
+    if (!page) return;
+
+    // 切换 nav 高亮
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+
+    // 切换 page 显示
+    document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+    const target = document.querySelector(`.page[data-page="${page}"]`);
+    if (target) target.classList.remove("hidden");
+
+    // 进入不同 page 触发对应初始化
+    if (page === "notebook") loadNotebook();
+    if (page === "parent") loadParentData();
+    if (page === "plan") loadPlanList();
+  });
+});
+
+// ========== 表情切换 ==========
+const EXPRS = [
+  {e:'🦊', l:'😊 嗨,我是小窗'},
+  {e:'😺', l:'😸 开心'},
+  {e:'🤔', l:'🤔 思考中'},
+  {e:'😮', l:'😲 哇哦'},
+  {e:'😳', l:'😳 害羞'},
+  {e:'🤗', l:'🤗 鼓励你'},
+  {e:'😵', l:'😵 我也不会诶'},
+];
+let exprIdx = 0;
+function cycleExpr() {
+  exprIdx = (exprIdx + 1) % EXPRS.length;
+  document.getElementById("char").textContent = EXPRS[exprIdx].e;
+  document.getElementById("expr-label").textContent = EXPRS[exprIdx].l;
+}
+
+// ========== 心情追踪 ==========
+document.querySelectorAll(".mood-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    // 记录到 localStorage
+    localStorage.setItem("xiaochuang_mood_today", btn.dataset.mood);
+  };
+});
+// 恢复今日心情
+const savedMood = localStorage.getItem("xiaochuang_mood_today");
+if (savedMood) {
+  document.querySelectorAll(".mood-btn").forEach(b => {
+    b.classList.remove("active");
+    if (b.dataset.mood === savedMood) b.classList.add("active");
+  });
+}
+
+// ========== 任务卡 ==========
+function setTask() {
+  const task = prompt("今天要学什么？(如:数学·分数的认识)");
+  if (task) {
+    document.getElementById("today-task").textContent = "📚 " + task;
+    document.getElementById("task-meta").textContent = "⏱️ 建议 20 分钟 · 🔥 开始专注吧";
+    document.getElementById("task-bar").style.width = "0%";
+    localStorage.setItem("xiaochuang_task", task);
+  }
+}
+function finishTask() {
+  document.getElementById("task-bar").style.width = "100%";
+  document.getElementById("task-meta").textContent = "✅ 太棒了！明天再来哦";
+  const newStreak = parseInt(localStorage.getItem("xiaochuang_streak") || 0) + 1;
+  localStorage.setItem("xiaochuang_streak", newStreak);
+  document.getElementById("streak").textContent = newStreak;
+  document.getElementById("streak2").textContent = newStreak;
+  document.getElementById("done-count").textContent = newStreak;
+}
+// 恢复任务
+const savedTask = localStorage.getItem("xiaochuang_task");
+if (savedTask) {
+  document.getElementById("today-task").textContent = "📚 " + savedTask;
+  document.getElementById("task-meta").textContent = "⏱️ 建议 20 分钟 · 🔥 开始专注吧";
+}
+const savedStreak = parseInt(localStorage.getItem("xiaochuang_streak") || 0);
+document.getElementById("streak").textContent = savedStreak;
+document.getElementById("streak2").textContent = savedStreak;
+document.getElementById("done-count").textContent = savedStreak;
+
+// ========== 番茄钟 ==========
+let timerSec = 25 * 60;
+let timerId = null;
+let timerRunning = false;
+
+function setTimer(mins) {
+  if (timerRunning) return;
+  timerSec = mins * 60;
+  updateTimerDisplay();
+  document.getElementById("timer-label").textContent = `准备开始 ${mins} 分钟`;
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerId);
+    timerRunning = false;
+    document.getElementById("timer-btn").textContent = "继续";
+    document.getElementById("timer-label").textContent = "已暂停";
+  } else {
+    timerRunning = true;
+    document.getElementById("timer-btn").textContent = "暂停";
+    document.getElementById("timer-label").textContent = "专注进行中...";
+    timerId = setInterval(() => {
+      timerSec--;
+      if (timerSec <= 0) {
+        clearInterval(timerId);
+        timerRunning = false;
+        document.getElementById("timer-display").textContent = "00:00";
+        document.getElementById("timer-label").textContent = "🎉 完成！休息一下";
+        document.getElementById("timer-btn").textContent = "再来一次";
+        focusMins += 25;
+        document.getElementById("focus-mins").textContent = focusMins;
+        document.getElementById("focus-mins-2").textContent = focusMins;
+        const bar = document.getElementById("task-bar");
+        bar.style.width = Math.min(100, parseInt(bar.style.width || 0) + 25) + "%";
+        localStorage.setItem("xiaochuang_focus_mins", focusMins);
+        return;
+      }
+      updateTimerDisplay();
+    }, 1000);
+  }
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSec / 60);
+  const s = timerSec % 60;
+  document.getElementById("timer-display").textContent =
+    String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+}
+focusMins = parseInt(localStorage.getItem("xiaochuang_focus_mins") || 0);
+document.getElementById("focus-mins").textContent = focusMins;
+document.getElementById("focus-mins-2").textContent = focusMins;
+
+// ========== 对话(首页主对话区) ==========
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  await askBackend(text, "chat-history");
+}
+
+async function quickAsk(text) {
+  document.getElementById("chat-input").value = text;
+  await sendChat();
+}
+
+// ========== 对话(独立对话页) ==========
+async function sendChatTo(inputId, historyId) {
+  const input = document.getElementById(inputId);
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  await askBackend(text, historyId);
+}
+
+async function quickAskTo(text, inputId, historyId) {
+  document.getElementById(inputId).value = text;
+  await sendChatTo(inputId, historyId);
+}
+
+async function askBackend(text, historyId) {
+  const history = document.getElementById(historyId);
+
+  // 用户气泡
+  const userRow = document.createElement("div");
+  userRow.style.cssText = "display:flex;justify-content:flex-end;margin:6px 0;";
+  userRow.innerHTML = '<div class="bubble user">' + escapeHtml(text) + '</div>';
+  history.appendChild(userRow);
+  history.scrollTop = history.scrollHeight;
+
+  // loading
+  const loading = document.createElement("div");
+  loading.style.cssText = "display:flex;margin:6px 0;";
+  loading.innerHTML = '<div class="bubble bot typing">🦊 小窗在想...</div>';
+  history.appendChild(loading);
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    const r = await fetch(API_BASE + "/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text, session_id: SESSION_ID})
+    });
+    const data = await r.json();
+    loading.remove();
+
+    const botRow = document.createElement("div");
+    botRow.style.cssText = "display:flex;margin:6px 0;";
+    botRow.innerHTML = '<div class="bubble bot">' + escapeHtml(data.text).replace(/\n/g, '<br>') + '</div>';
+    history.appendChild(botRow);
+    history.scrollTop = history.scrollHeight;
+
+    // 表情同步
+    const exprMap = {smile:'😺', thinking:'🤔', surprised:'😮', shy:'😳', encourage:'🤗', confused:'😵'};
+    if (exprMap[data.expression]) {
+      document.getElementById("char").textContent = exprMap[data.expression];
+    }
+
+    // 计数
+    askCount++;
+    document.getElementById("ask-count").textContent = askCount;
+  } catch (e) {
+    loading.remove();
+    const err = document.createElement("div");
+    err.style.cssText = "display:flex;margin:6px 0;";
+    err.innerHTML = '<div class="bubble bot" style="color:#c62828;">❌ 后端未连接 (请运行 python app.py)</div>';
+    history.appendChild(err);
+  }
+}
+
+// ========== 小本本 ==========
+async function loadNotebook() {
+  const list = document.getElementById("notebook-list");
+  list.innerHTML = '<div style="text-align:center;color:#8d6e63;padding:20px;">⏳ 加载中...</div>';
+  try {
+    const r = await fetch(API_BASE + "/api/topics?session_id=" + SESSION_ID);
+    const data = await r.json();
+    if (!data.topics || data.topics.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#8d6e63;padding:20px;">还没有话题,先去和 🦊 小窗聊聊吧!</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.topics.forEach(t => {
+      list.innerHTML += `
+        <div class="note-card">
+          <div class="topic">${escapeHtml(t.topic)}</div>
+          <div class="time">🦊 ${escapeHtml(t.created_at || '')}</div>
+          <div class="summary">${escapeHtml(t.reply_summary || '')}</div>
+        </div>`;
+    });
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center;color:#c62828;padding:20px;">❌ 后端未连接</div>';
+  }
+}
+
+// ========== 学习计划(本地存储) ==========
+let plans = JSON.parse(localStorage.getItem("xiaochuang_plans") || "[]");
+
+function loadPlanList() {
+  const list = document.getElementById("plan-list");
+  if (plans.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#8d6e63;padding:20px;">还没有任务,添加一个吧~</div>';
+    return;
+  }
+  list.innerHTML = '';
+  plans.forEach((p, i) => {
+    list.innerHTML += `
+      <div class="plan-item ${p.done ? 'done' : ''}">
+        <span class="time">⏰ ${escapeHtml(p.time)}</span>
+        <span class="text">${escapeHtml(p.task)}</span>
+        <button onclick="togglePlan(${i})" style="background:white;border:1px solid #ffe0b2;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;">${p.done ? '↺' : '✓'}</button>
+        <button class="del" onclick="delPlan(${i})">✕</button>
+      </div>`;
+  });
+}
+
+function addPlan() {
+  const task = document.getElementById("plan-task-input").value.trim();
+  const time = document.getElementById("plan-time-input").value;
+  if (!task) return alert("请输入要学的内容");
+  if (!time) return alert("请选择提醒时间");
+  plans.push({task, time, done: false, created: Date.now()});
+  localStorage.setItem("xiaochuang_plans", JSON.stringify(plans));
+  document.getElementById("plan-task-input").value = "";
+  document.getElementById("plan-time-input").value = "";
+  loadPlanList();
+}
+
+function togglePlan(i) {
+  plans[i].done = !plans[i].done;
+  localStorage.setItem("xiaochuang_plans", JSON.stringify(plans));
+  loadPlanList();
+}
+
+function delPlan(i) {
+  plans.splice(i, 1);
+  localStorage.setItem("xiaochuang_plans", JSON.stringify(plans));
+  loadPlanList();
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ========== 家长通道 ==========
+async function loadParentData() {
+  try {
+    const r = await fetch(API_BASE + "/api/parent/stats?child_session=" + SESSION_ID);
+    const d = await r.json();
+    const topicsEl = document.getElementById("parent-topics");
+    if (d.recent_topics && d.recent_topics.length > 0) {
+      topicsEl.innerHTML = d.recent_topics.map(t =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ffe0b2;font-size:13px;">
+          <span>${escapeHtml(t.topic)}</span>
+          <span style="color:#8d6e63;">${escapeHtml((t.time || '').slice(0,16))}</span>
+        </div>`
+      ).join('');
+    } else {
+      topicsEl.innerHTML = '<div style="text-align:center;color:#8d6e63;">孩子今天还没问什么</div>';
+    }
+  } catch (e) {
+    document.getElementById("parent-topics").innerHTML =
+      '<div style="text-align:center;color:#c62828;">❌ 后端未连接</div>';
+  }
+}
+
+async function sendParentVoice() {
+  const msg = document.getElementById("parent-msg-input").value.trim();
+  if (!msg) return alert("请输入留言内容");
+  try {
+    await fetch(API_BASE + "/api/parent/voice", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({child_session: SESSION_ID, text: msg})
+    });
+    alert("✅ 留言已发送,孩子下次打开就能看到");
+    document.getElementById("parent-msg-input").value = "";
+  } catch (e) {
+    alert("❌ 发送失败,请检查后端连接");
+  }
+}
+
+async function clearAllData() {
+  if (!confirm("⚠️ 确认清空孩子所有数据?此操作不可逆")) return;
+  try {
+    await fetch(API_BASE + "/api/parent/clear", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({child_session: SESSION_ID})
+    });
+    alert("✅ 已清空");
+    localStorage.removeItem("xiaochuang_task");
+    localStorage.removeItem("xiaochuang_streak");
+    localStorage.removeItem("xiaochuang_mood_today");
+    localStorage.removeItem("xiaochuang_plans");
+    localStorage.removeItem("xiaochuang_focus_mins");
+    plans = [];
+    loadPlanList();
+    loadParentData();
+  } catch (e) {
+    alert("❌ 清空失败");
+  }
+}
+
+// ========== 拍题详解 ==========
+let currentPhotoURL = null; // 保存当前 ObjectURL,避免内存泄漏
+
+async function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // 限制文件大小 5MB,避免卡死
+  if (file.size > 5 * 1024 * 1024) {
+    alert("图片太大啦(>5MB),请压缩后再上传~");
+    input.value = "";
+    return;
+  }
+
+  const result = document.getElementById("photo-result");
+  result.innerHTML = '<div class="photo-result"><h4>⏳ 小窗在读图...</h4><div class="step">正在识别题目内容...</div></div>';
+
+  // 释放上一个 URL
+  if (currentPhotoURL) {
+    URL.revokeObjectURL(currentPhotoURL);
+  }
+  // 用 ObjectURL 而不是 data URL(避免 base64 超长字符串卡 DOM)
+  currentPhotoURL = URL.createObjectURL(file);
+
+  // 先显示图片,让用户看到响应,再渲染步骤
+  result.innerHTML = `
+    <div class="photo-result">
+      <h4>📷 题目已识别 (V0.1.2 演示版)</h4>
+      <img id="photo-preview" src="${currentPhotoURL}" style="max-width:100%;max-height:300px;border-radius:8px;margin-bottom:10px;display:block;">
+      <div class="step"><b>① 题目识别</b>:这道题是 <span id="recognized">初中数学·一元一次方程计算</span></div>
+      <div class="step"><b>② 思路拆解</b>:
+        <br>• 把含 x 的项移到等号左边,常数项移到右边
+        <br>• 移项时记得 <b style="color:#c62828;">变号</b>(+变-,-变+)
+        <br>• 最后两边同时除以 x 的系数
+      </div>
+      <div class="step"><b>③ 举一反三</b>(3 道相似题):
+        <br>📝 <span style="color:#ea580c;">2x + 5 = 13</span>,x = ?
+        <br>📝 <span style="color:#ea580c;">3x - 7 = 8</span>,x = ?
+        <br>📝 <span style="color:#ea580c;">5x + 2 = 3x + 10</span>,x = ?
+      </div>
+      <div style="color:#8d6e63;font-size:11px;margin-top:8px;">
+        ⚠️ V0.1.2:真实 OCR 需后端 MiniMax-VL,当前演示版
+      </div>
+      <button onclick="resetPhoto()" style="margin-top:10px;background:white;border:1px solid #ffe0b2;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;">🔄 再拍一张</button>
+    </div>`;
+
+  // 滚动到结果区
+  result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function resetPhoto() {
+  if (currentPhotoURL) {
+    URL.revokeObjectURL(currentPhotoURL);
+    currentPhotoURL = null;
+  }
+  document.getElementById("photo-input").value = "";
+  document.getElementById("photo-result").innerHTML = "";
+}
+</script>
+</body>
+</html>
