@@ -527,4 +527,6 @@ if __name__ == "__main__":
     init_db()
     clean_old_records()
     print(f"🌿 小窗后端启动 · mode={LLM_MODE} · http://localhost:8000")
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    import os
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=False)

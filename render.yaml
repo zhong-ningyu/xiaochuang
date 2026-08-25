@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: xiaochuang-backend
+    runtime: python
+    plan: free
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && python app.py"
+    envVars:
+      - key: LLM_MODE
+        value: real
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_BASE_URL
+        value: https://api.MiniMax.chat
+      - key: MINIMAX_MODEL
+        value: MiniMax-M3
+      - key: MINIMAX_API_PATH
+        value: /v1/text/chatcompletion_v2
+      - key: PORT
+        value: 10000
